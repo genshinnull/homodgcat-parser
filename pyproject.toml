@@ -1,0 +1,17 @@
+[project]
+name = "homodgcat-parser"
+version = "0.0.0"
+description = ""
+requires-python = ">=3.14"
+dependencies = [
+    "marimo>=0.20.2",
+    "orjson>=3.11.7",
+    "polars>=1.38.1",
+    "pydantic>=2.12.5",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.2",
+    "ty>=0.0.18",
+]
