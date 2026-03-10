@@ -5,9 +5,11 @@ app = marimo.App(width="medium")
 
 with app.setup:
     import os
+    import re
     from pathlib import Path
 
     import marimo as mo
+    import orjson
     import polars as pl
     from git import Repo
 
@@ -19,6 +21,79 @@ with app.setup:
 @app.cell
 def _():
     DATA_PATH, CBT3_DATA_PATH, LANGS
+    return
+
+
+@app.cell
+def _():
+    with open("text-versions.json") as _f:
+        versions = orjson.loads(_f.read())
+    len(versions)
+    return (versions,)
+
+
+@app.function
+def extract_textmap(ver: str, lang: str, dir: Path) -> list[pl.DataFrame]:
+    results = []
+    dirpath, _, filenames = next(os.walk(dir))
+    for filename in filenames:
+        file = Path(dirpath) / filename
+        file_stem = file.stem
+        if re.match(rf"Text(Map)?{lang}(_\d)?", file_stem):
+            medium = False
+        elif re.match(rf"TextMap_Medium{lang}(_\d)?", file_stem):
+            medium = True
+        else:
+            continue
+        with open(file) as f:
+            data = orjson.loads(f.read())
+        results.append(
+            pl.DataFrame({"key": data.keys(), "value": data.values()})
+            .filter(pl.col.value != "")
+            .select(
+                pl.lit(ver).alias("version"),
+                pl.col.key,
+                pl.col.value,
+                pl.lit(medium).alias("medium"),
+            )
+        )
+    return results
+
+
+@app.cell
+def _(versions):
+    text_data = {lang: [] for lang in LANGS}
+    with mo.status.progress_bar(
+        total=len(versions),
+        remove_on_exit=True,
+        title="Extracting...",
+    ) as bar:
+        for _ver in versions:
+            bar.subtitle = f"Working on Version {_ver['ver']}"
+            match _ver["type"]:
+                case "REL":
+                    _path = DATA_PATH
+                case "CBT3":
+                    _path = CBT3_DATA_PATH
+            if _ver.get("hash"):
+                _repo = Repo(_path)
+                assert not _repo.is_dirty()
+                for dir in [
+                    Path("TextMap"),
+                    Path("Readable"),
+                    Path("Subtitle"),
+                ]:
+                    _repo.git.restore("--source", _ver["hash"], dir)
+            # TODO: data ingest
+            for _lang in LANGS:
+                if curr_textmap := extract_textmap(
+                    _ver["ver"], _lang, _path / "TextMap"
+                ):
+                    text_data[_lang].append(pl.concat(curr_textmap))
+            if _ver.get("hash"):
+                _repo.git.clean("-fxd")
+                _repo.git.reset("HEAD", "--hard")
+            bar.update()
     return
 
 
