@@ -91,7 +91,7 @@ def _(versions):
                 ):
                     text_data[_lang].append(pl.concat(curr_textmap))
             if _ver.get("hash"):
-                _repo.git.clean("-fxd")
+                _repo.git.clean("-fd")
                 _repo.git.reset("HEAD", "--hard")
             bar.update()
     return
