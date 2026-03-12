@@ -174,7 +174,7 @@ def _(versions):
             _bar.update()
     text_data = {lang: pl.concat(data) for lang, data in text_data.items()}
     {lang: len(data) for lang, data in text_data.items()}
-    return
+    return (text_data,)
 
 
 @app.cell(hide_code=True)
@@ -200,7 +200,7 @@ def _():
         )
     )
     localization_df
-    return
+    return (localization_df,)
 
 
 @app.cell(hide_code=True)
@@ -223,18 +223,18 @@ def _():
                     "titleTextMapHash": pl.String,
                 },
             )
-            .rename({"questIDList": "documentID"})
+            .rename({"questIDList": "id"})
             .select(
                 pl.col.documentType,
-                pl.col.documentID,
+                pl.col.id,
                 pl.col.titleTextMapHash,
             )
             .filter(~pl.col.documentType.is_in(["DynamicBook", "Video"]))
         )
-        .explode("documentID")
+        .explode("id")
         .pivot(
             "documentType",
-            index="documentID",
+            index="id",
             values="titleTextMapHash",
             aggregate_function="first",
         )
@@ -248,6 +248,43 @@ def _():
     mo.md(r"""
     ## Transformation
     """)
+    return
+
+
+@app.cell
+def _(document_df, localization_df, text_data):
+    for _lang in LANGS:
+        _tm_df = (
+            text_data[_lang]
+            .filter(
+                pl.col.type == "TextMap", pl.col.version == pl.col.version.max()
+            )
+            .select("key", "value")
+        )
+        _readable_df = document_df.join(
+            localization_df, on="id", how="inner", validate="1:1"
+        ).select(
+            pl.col.key,
+            pl.col.Paged.replace_strict(
+                _tm_df.get_column("key"),
+                _tm_df.get_column("value"),
+                default=None,
+            ),
+            pl.col.Book.replace_strict(
+                _tm_df.get_column("key"),
+                _tm_df.get_column("value"),
+                default=None,
+            ),
+            pl.col.Letter.replace_strict(
+                _tm_df.get_column("key"),
+                _tm_df.get_column("value"),
+                default=None,
+            ),
+        )
+        text_data[_lang] = text_data[_lang].join(
+            _readable_df, on="key", how="left"
+        )
+    {lang: len(data) for lang, data in text_data.items()}
     return
 
 
