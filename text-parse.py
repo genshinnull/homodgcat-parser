@@ -153,6 +153,72 @@ def _(versions):
     return
 
 
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## LocalizationExcelConfigData
+    """)
+    return
+
+
+@app.cell
+def _():
+    localization_df = (
+        pl.read_json(DATA_PATH / "ExcelBinOutput/LocalizationExcelConfigData.json")
+        .filter(pl.col.assetType == "LOC_TEXT")
+        .select(
+            pl.col.id,
+            pl.col.enPath.str.split("/")
+            .list.last()
+            .str.split("_EN")
+            .list.first()
+            .alias("key"),
+        )
+    )
+    localization_df
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## DocumentExcelConfigData
+    """)
+    return
+
+
+@app.cell
+def _():
+    document_df = (
+        (
+            pl.read_json(
+                DATA_PATH / "ExcelBinOutput/DocumentExcelConfigData.json",
+                schema={
+                    "documentType": pl.String,
+                    "questIDList": pl.List(pl.Int64),
+                    "titleTextMapHash": pl.String,
+                },
+            )
+            .rename({"questIDList": "documentID"})
+            .select(
+                pl.col.documentType,
+                pl.col.documentID,
+                pl.col.titleTextMapHash,
+            )
+            .filter(~pl.col.documentType.is_in(["DynamicBook", "Video"]))
+        )
+        .explode("documentID")
+        .pivot(
+            "documentType",
+            index="documentID",
+            values="titleTextMapHash",
+            aggregate_function="first",
+        )
+    )
+    document_df
+    return (document_df,)
+
+
 @app.cell
 def _():
     return
