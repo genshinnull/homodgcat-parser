@@ -20,6 +20,22 @@ with app.setup:
     LANGS = os.environ["LANGS"].split(",")
 
 
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # Text Parser
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Setup
+    """)
+    return
+
+
 @app.cell
 def _():
     DATA_PATH, CBT3_DATA_PATH, LANGS
@@ -32,6 +48,14 @@ def _():
         versions = orjson.loads(_f.read())
     len(versions)
     return (versions,)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## TextMap, Readable, Subtitle
+    """)
+    return
 
 
 @app.function
@@ -219,8 +243,19 @@ def _():
     return (document_df,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
+    mo.md(r"""
+    ## Transformation
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Output
+    """)
     return
 
 
