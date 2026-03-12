@@ -18,6 +18,7 @@ with app.setup:
     DATA_PATH = Path(os.environ["DATA_PATH"])
     CBT3_DATA_PATH = Path(os.environ["CBT3_DATA_PATH"])
     LANGS = os.environ["LANGS"].split(",")
+    VERSION = os.environ["VERSION"]
 
 
 @app.cell(hide_code=True)
@@ -38,7 +39,7 @@ def _():
 
 @app.cell
 def _():
-    DATA_PATH, CBT3_DATA_PATH, LANGS
+    DATA_PATH, CBT3_DATA_PATH, LANGS, VERSION
     return
 
 
@@ -293,6 +294,20 @@ def _():
     mo.md(r"""
     ## Output
     """)
+    return
+
+
+@app.cell
+def _(text_data):
+    for _lang in LANGS:
+        text_data[_lang].filter(
+            (pl.col.value.is_not_null()) & (pl.col.value != "")
+        ).sort("value").write_parquet(f"output/GI_Text_{_lang}_{VERSION}.parquet")
+    return
+
+
+@app.cell
+def _():
     return
 
 
