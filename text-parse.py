@@ -254,6 +254,7 @@ def _():
 
 @app.cell
 def _(document_df, localization_df, text_data):
+    text_data_transformed = {}
     for _lang in LANGS:
         _tm_df = (
             text_data[_lang]
@@ -282,11 +283,21 @@ def _(document_df, localization_df, text_data):
                 default=None,
             ),
         )
-        text_data[_lang] = text_data[_lang].join(
-            _readable_df, on="key", how="left"
+        text_data_transformed[_lang] = (
+            text_data[_lang]
+            .join(_readable_df, on="key", how="left")
+            .sort("version")
+            .with_columns(
+                pl.col.version.first().over("value").alias("value_from"),
+                pl.col.version.last().over("value").alias("value_to"),
+                pl.col.version.first()
+                .over("key", "value")
+                .alias("key-value_from"),
+                pl.col.version.last().over("key", "value").alias("key-value_to"),
+            )
         )
     {lang: len(data) for lang, data in text_data.items()}
-    return
+    return (text_data_transformed,)
 
 
 @app.cell(hide_code=True)
@@ -298,11 +309,16 @@ def _():
 
 
 @app.cell
-def _(text_data):
+def _(text_data_transformed):
     for _lang in LANGS:
-        text_data[_lang].filter(
-            (pl.col.value.is_not_null()) & (pl.col.value != "")
-        ).sort("value").write_parquet(f"output/GI_Text_{_lang}_{VERSION}.parquet")
+        text_data_transformed[_lang].filter(
+            pl.col.version == pl.col.version.max()
+        ).drop("version").sort("value", "type", "key").write_parquet(
+            f"output/GI_Text_{_lang}_{VERSION}.parquet"
+        )
+        text_data_transformed[_lang].sort(
+            "value", "type", "key", "version"
+        ).write_parquet(f"output/GI_Text_{_lang}_{VERSION}_Full.parquet")
     return
 
 
