@@ -288,12 +288,12 @@ def _(document_df, localization_df, text_data):
             .join(_readable_df, on="key", how="left")
             .sort("version")
             .with_columns(
-                pl.col.version.first().over("value").alias("value_from"),
-                pl.col.version.last().over("value").alias("value_to"),
-                pl.col.version.first()
-                .over("key", "value")
-                .alias("key_value_from"),
-                pl.col.version.last().over("key", "value").alias("key_value_to"),
+                pl.col.version.first().over("key").alias("k_from"),
+                pl.col.version.last().over("key").alias("k_to"),
+                pl.col.version.first().over("value").alias("v_from"),
+                pl.col.version.last().over("value").alias("v_to"),
+                pl.col.version.first().over("key", "value").alias("kv_from"),
+                pl.col.version.last().over("key", "value").alias("kv_to"),
             )
         )
     {lang: len(data) for lang, data in text_data.items()}
@@ -313,7 +313,9 @@ def _(text_data_transformed):
     for _lang in LANGS:
         text_data_transformed[_lang].filter(
             pl.col.version == pl.col.version.max()
-        ).drop("version").sort("value", "type", "key").write_parquet(
+        ).select(
+            "type", "key", "value", "Paged", "Book", "Letter", "v_from", "kv_from"
+        ).sort("value", "type", "key").write_parquet(
             f"output/GI_Text_{_lang}_{VERSION}.parquet"
         )
         text_data_transformed[_lang].sort(
