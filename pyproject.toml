@@ -1,5 +1,5 @@
 [project]
-name = "homodgcat-parser"
+name = "homodgcat_parser"
 version = "0.0.0"
 description = ""
 requires-python = ">=3.14"

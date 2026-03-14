@@ -191,7 +191,7 @@ wheels = [
 ]
 
 [[package]]
-name = "homodgcat-parser"
+name = "homodgcat_parser"
 version = "0.0.0"
 source = { virtual = "." }
 dependencies = [

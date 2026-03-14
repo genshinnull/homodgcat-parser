@@ -45,7 +45,7 @@ def _():
 
 @app.cell
 def _():
-    with open("text-versions.json") as _f:
+    with open("text_versions.json") as _f:
         versions = orjson.loads(_f.read())
     len(versions)
     return (versions,)
@@ -292,8 +292,8 @@ def _(document_df, localization_df, text_data):
                 pl.col.version.last().over("value").alias("value_to"),
                 pl.col.version.first()
                 .over("key", "value")
-                .alias("key-value_from"),
-                pl.col.version.last().over("key", "value").alias("key-value_to"),
+                .alias("key_value_from"),
+                pl.col.version.last().over("key", "value").alias("key_value_to"),
             )
         )
     {lang: len(data) for lang, data in text_data.items()}
